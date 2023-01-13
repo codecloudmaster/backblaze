@@ -5,4 +5,4 @@ Simple  easy python script which logins to backblaze s3 compatatible bucket and 
 I do not use lifecycle rules in bucket fo oher reason.
 # Requirements
 - pip3 install -r requirements.txt
-- Create `.env`  with required keys.
+- Create `.env` file with required keys.
