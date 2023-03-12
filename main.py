@@ -5,6 +5,7 @@ from botocore.config import Config
 from dotenv import load_dotenv
 import os
 import datetime
+from time import sleep
 from datetime import datetime, timedelta
 # Return a boto3 resource object for B2 service
 
@@ -81,36 +82,37 @@ def delete_files_all_versions(bucket, keys, client, prefix):
         print('error', ce)
 
 
-def main():
+def main(bucketname, endpoint, keyid, appkey, prefix):
     load_dotenv()  # take environment variables from .env.
     # get environment variables from file .env
-    private_bucket_name = os.getenv("BUCKETNAME")  # Backblaze endpoint
-    endpoint = os.getenv("ENDPOINT")  # Backblaze endpoint
-    key_id_private_ro = os.getenv("KEY_ID_PRIVATE_RO")  # Backblaze keyID
-    application_key_private_ro = os.getenv(
-        "APPLICATION_KEY_PRIVATE_RO")  # Backblaze applicationKey
-    prefix = os.getenv("PREFIX")
+    private_bucket_name = os.getenv(bucketname)  # Backblaze endpoint
+    endpoint = os.getenv(endpoint)  # Backblaze endpoint
+    key_id_private_ro = os.getenv(keyid)  # Backblaze keyID
+    application_key_private_ro = os.getenv(appkey)  # Backblaze applicationKey
+    prefix = os.getenv(prefix)
 
     # Call function to return reference to B2 service using a set of keys
     b2_private = get_b2_resource(
         endpoint, key_id_private_ro, application_key_private_ro)
     b2_private_client = get_b2_client(
         endpoint, key_id_private_ro, application_key_private_ro)
-
-    day_to_delete = datetime.today() - timedelta(days=14)
+    day_to_delete = datetime.today() - timedelta(days=3)
 
     bucket_object_keys = list_object_keys(
         private_bucket_name, b2_private, prefix, day_to_delete)
     print('BEFORE - Bucket Contents ')
     for key in bucket_object_keys:
         print(key)
+    #sleep(160)
     #delete_files(private_bucket_name, bucket_object_keys, b2_private)
     delete_files_all_versions(
         private_bucket_name, bucket_object_keys, b2_private_client, prefix)
     print('\nAFTER - Bucket Contents ')
     my_bucket = b2_private.Bucket(private_bucket_name)
-    for my_bucket_object in my_bucket.objects.filter(Prefix='FS'):
+    for my_bucket_object in my_bucket.objects.filter(Prefix=prefix):
         print(my_bucket_object.key)
 
 
-main()
+main("BUCKETNAME", "ENDPOINT", "KEY_ID_PRIVATE_RO", "APPLICATION_KEY_PRIVATE_RO", "PREFIX")
+sleep(5)
+main("BUCKETNAMEARDIS", "ENDPOINT", "KEY_ID_PRIVATE_RO_ARDIS", "APPLICATION_KEY_PRIVATE_RO_ARDIS", "PREFIXARDIS")
