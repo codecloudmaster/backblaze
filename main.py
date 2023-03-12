@@ -96,7 +96,7 @@ def main(bucketname, endpoint, keyid, appkey, prefix):
         endpoint, key_id_private_ro, application_key_private_ro)
     b2_private_client = get_b2_client(
         endpoint, key_id_private_ro, application_key_private_ro)
-    day_to_delete = datetime.today() - timedelta(days=3)
+    day_to_delete = datetime.today() - timedelta(days=15)
 
     bucket_object_keys = list_object_keys(
         private_bucket_name, b2_private, prefix, day_to_delete)
