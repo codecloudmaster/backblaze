@@ -7,32 +7,32 @@ import os
 import datetime
 from time import sleep
 from datetime import datetime, timedelta
-# Return a boto3 resource object for B2 service
+# Return a boto3 resource object for s3 service
 
 
-def get_b2_resource(endpoint, key_id, application_key):
-    b2 = boto3.resource(service_name='s3',
+def get_s3_resource(endpoint, key_id, application_key):
+    s3 = boto3.resource(service_name='s3',
                         endpoint_url=endpoint,     # Backblaze endpoint
                         aws_access_key_id=key_id,  # Backblaze keyID
                         aws_secret_access_key=application_key,
                                                    # Backblaze applicationKey
                         config=Config(
                             signature_version='s3v4'))
-    return b2
+    return s3
 
 
-def get_b2_client(endpoint, key_id, application_key):
-    b2_client = boto3.client(service_name='s3',
+def get_s3_client(endpoint, key_id, application_key):
+    s3_client = boto3.client(service_name='s3',
                              endpoint_url=endpoint,                # Backblaze endpoint
                              aws_access_key_id=key_id,              # Backblaze keyID
                              aws_secret_access_key=application_key)  # Backblaze applicationKey
-    return b2_client
+    return s3_client
 
 
-def list_object_keys(bucket, b2, prefix, d):
+def list_object_keys(bucket, s3, prefix, d):
     try:
         print('connecting....')
-        response = b2.Bucket(bucket).objects.filter(Prefix=prefix)
+        response = s3.Bucket(bucket).objects.filter(Prefix=prefix)
         return_list = []               # create empty list
         for object in response:        # iterate over response
             if object.last_modified.replace(tzinfo=None) <= d:
@@ -46,10 +46,10 @@ def list_object_keys(bucket, b2, prefix, d):
     except ClientError as ce:
         print('error', ce)
 
-# Delete the specified objects from B2
+# Delete the specified objects from s3
 
 
-def delete_files(bucket, keys, b2):
+def delete_files(bucket, keys, s3):
     objects = []
     for key in keys:
         print(f'add for delete {key}')
@@ -57,11 +57,11 @@ def delete_files(bucket, keys, b2):
     if objects != []:
         try:
             print(f'deleting {keys}')
-            b2.Bucket(bucket).delete_objects(Delete={'Objects': objects})
+            s3.Bucket(bucket).delete_objects(Delete={'Objects': objects})
         except ClientError as ce:
             print('error', ce)
 
-# Delete the specified object from B2 - all versions
+# Delete the specified object from s3 - all versions
 
 
 def delete_files_all_versions(bucket, keys, client, prefix):
@@ -91,24 +91,24 @@ def main(bucketname, endpoint, keyid, appkey, prefix):
     application_key_private_ro = os.getenv(appkey)  # Backblaze applicationKey
     prefix = os.getenv(prefix)
 
-    # Call function to return reference to B2 service using a set of keys
-    b2_private = get_b2_resource(
+    # Call function to return reference to s3 service using a set of keys
+    s3_private = get_s3_resource(
         endpoint, key_id_private_ro, application_key_private_ro)
-    b2_private_client = get_b2_client(
+    s3_private_client = get_s3_client(
         endpoint, key_id_private_ro, application_key_private_ro)
     day_to_delete = datetime.today() - timedelta(days=15)
 
     bucket_object_keys = list_object_keys(
-        private_bucket_name, b2_private, prefix, day_to_delete)
+        private_bucket_name, s3_private, prefix, day_to_delete)
     print('BEFORE - Bucket Contents ')
     for key in bucket_object_keys:
         print(key)
     #sleep(160)
-    #delete_files(private_bucket_name, bucket_object_keys, b2_private)
+    #delete_files(private_bucket_name, bucket_object_keys, s3_private)
     delete_files_all_versions(
-        private_bucket_name, bucket_object_keys, b2_private_client, prefix)
+        private_bucket_name, bucket_object_keys, s3_private_client, prefix)
     print('\nAFTER - Bucket Contents ')
-    my_bucket = b2_private.Bucket(private_bucket_name)
+    my_bucket = s3_private.Bucket(private_bucket_name)
     for my_bucket_object in my_bucket.objects.filter(Prefix=prefix):
         print(my_bucket_object.key)
 
