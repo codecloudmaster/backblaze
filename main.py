@@ -7,10 +7,41 @@ import os
 import datetime
 from time import sleep
 from datetime import datetime, timedelta
+import logging
+from logging.handlers import RotatingFileHandler
+from logging.handlers import TimedRotatingFileHandler
 # Return a boto3 resource object for s3 service
+
+class Mylogger:
+    def __init__(self, logger_name, log_file_path, log_level=logging.INFO, log_rotation_days=7):
+        self.logger = logging.getLogger(logger_name)
+        self.logger.setLevel(log_level)
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        # create file handler which logs even debug messages
+        # file_handler = RotatingFileHandler(log_file_path, maxBytes=1024 * 1024 * 5, backupCount=5)
+        file_handler = TimedRotatingFileHandler(log_file_path, when='D', interval=1, backupCount=log_rotation_days)
+        file_handler.setFormatter(formatter)
+        self.logger.addHandler(file_handler)
+        # create console handler with a higher log level
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(log_level)
+        console_handler.setFormatter(formatter)
+        self.logger.addHandler(console_handler)
+
+    def info(self, msg):
+        self.logger.info(msg)
+    
+    def error(self, msg):
+        self.logger.error(msg)
+        
+logger=Mylogger('mylogger', 'log.txt')
+
 
 
 def get_s3_resource(endpoint, key_id, application_key):
+    """
+    Return a boto3 S3 resource object for the specified endpoint and credentials
+    """
     s3 = boto3.resource(service_name='s3',
                         endpoint_url=endpoint,     # Backblaze endpoint
                         aws_access_key_id=key_id,  # Backblaze keyID
@@ -22,6 +53,9 @@ def get_s3_resource(endpoint, key_id, application_key):
 
 
 def get_s3_client(endpoint, key_id, application_key):
+    """
+    Return a boto3 S3 client object for the specified endpoint and credentials
+    """
     s3_client = boto3.client(service_name='s3',
                              endpoint_url=endpoint,                # Backblaze endpoint
                              aws_access_key_id=key_id,              # Backblaze keyID
@@ -30,8 +64,11 @@ def get_s3_client(endpoint, key_id, application_key):
 
 
 def list_object_keys(bucket, s3, prefix, d):
+    """
+    List object keys in the specified bucket with the given prefix that were last modified before the specified date
+    """
     try:
-        print('connecting....')
+        logger.info('connecting....')
         response = s3.Bucket(bucket).objects.filter(Prefix=prefix)
         return_list = []               # create empty list
         for object in response:        # iterate over response
