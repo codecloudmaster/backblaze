@@ -36,8 +36,6 @@ class Mylogger:
         
 logger=Mylogger('mylogger', 'log.txt')
 
-
-
 def get_s3_resource(endpoint, key_id, application_key):
     """
     Return a boto3 S3 resource object for the specified endpoint and credentials
@@ -68,7 +66,7 @@ def list_object_keys(bucket, s3, prefix, d):
     List object keys in the specified bucket with the given prefix that were last modified before the specified date
     """
     try:
-        logger.info('connecting....')
+        logger.info('connecting to s3....')
         response = s3.Bucket(bucket).objects.filter(Prefix=prefix)
         return_list = []               # create empty list
         for object in response:        # iterate over response
@@ -78,28 +76,26 @@ def list_object_keys(bucket, s3, prefix, d):
                 #print('File Name: %s ---- Date: %s' % (object.key, object.size))
                 # for each item in response, append object.key to list
                 return_list.append(object.key)
+        logger.info('get objects suscessful')
         return return_list                  # return list of keys from response
-        print('get objects suscessful')
     except ClientError as ce:
-        print('error', ce)
+        logger.error('error', ce)
 
 # Delete the specified objects from s3
-
 
 def delete_files(bucket, keys, s3):
     objects = []
     for key in keys:
-        print(f'add for delete {key}')
+        logger.info(f'add for delete {key}')
         objects.append({'Key': key})
     if objects != []:
         try:
-            print(f'deleting {keys}')
+            logger.info(f'deleting {keys}')
             s3.Bucket(bucket).delete_objects(Delete={'Objects': objects})
         except ClientError as ce:
-            print('error', ce)
+            logger.error('error', ce)
 
 # Delete the specified object from s3 - all versions
-
 
 def delete_files_all_versions(bucket, keys, client, prefix):
     try:
@@ -111,12 +107,12 @@ def delete_files_all_versions(bucket, keys, client, prefix):
             versions.extend(response.get('DeleteMarkers', []))
             for key in keys:
                 for version_id in [x['VersionId'] for x in versions if x['Key'] == key and x['VersionId'] != 'null']:
-                    print('Deleting {} version {}'.format(key, version_id))
+                    logger.info('Deleting {} version {}'.format(key, version_id))
                     client.delete_object(
                         Bucket=bucket, Key=key, VersionId=version_id)
 
     except ClientError as ce:
-        print('error', ce)
+        logger.error('error', ce)
 
 
 def main(bucketname, endpoint, keyid, appkey, prefix):
@@ -137,17 +133,17 @@ def main(bucketname, endpoint, keyid, appkey, prefix):
 
     bucket_object_keys = list_object_keys(
         private_bucket_name, s3_private, prefix, day_to_delete)
-    print('BEFORE - Bucket Contents ')
+    logger.info('BEFORE - Bucket Contents ')
     for key in bucket_object_keys:
-        print(key)
+        logger.info(key)
     #sleep(160)
     #delete_files(private_bucket_name, bucket_object_keys, s3_private)
     delete_files_all_versions(
         private_bucket_name, bucket_object_keys, s3_private_client, prefix)
-    print('\nAFTER - Bucket Contents ')
+    logger.info('\nAFTER - Bucket Contents ')
     my_bucket = s3_private.Bucket(private_bucket_name)
     for my_bucket_object in my_bucket.objects.filter(Prefix=prefix):
-        print(my_bucket_object.key)
+        logger.info(my_bucket_object.key)
 
 
 main("BUCKETNAME", "ENDPOINT", "KEY_ID_PRIVATE_RO", "APPLICATION_KEY_PRIVATE_RO", "PREFIX")
